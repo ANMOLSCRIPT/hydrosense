@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import os
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 from . import analytics as an
@@ -15,6 +17,32 @@ RANGES = {"24h": (timedelta(hours=24), 300), "7d": (timedelta(days=7), 3600), "3
 LIVE_ONLINE_WINDOW = timedelta(seconds=int(os.environ.get("DEVICE_ONLINE_SECONDS", "120")))
 DEMO_ONLINE_WINDOW = timedelta(minutes=45)
 HALF_HOUR = 1800
+
+
+# Independent database queries (different sites, or unrelated tables) run
+# concurrently. They are I/O bound, so threads are the right tool. Writes stay
+# sequential.
+#
+# Calls nest (all sites -> one site -> its queries). A task must never wait on
+# work queued in its own pool, or a small pool deadlocks once every worker is
+# waiting. So each nesting level has its own pool, and anything deeper runs
+# inline.
+_WORKERS = max(8, min(16, (os.cpu_count() or 2) * 2 - 1))
+_POOLS = [ThreadPoolExecutor(max_workers=_WORKERS, thread_name_prefix=f"hs-l{i}") for i in range(3)]
+_level = threading.local()
+
+
+def together(*calls):
+    """Run zero-argument callables concurrently and return their results in order."""
+    depth = getattr(_level, "depth", 0)
+    if depth >= len(_POOLS) or len(calls) < 2:
+        return [c() for c in calls]
+
+    def run(call):
+        _level.depth = depth + 1
+        return call()
+
+    return [f.result() for f in [_POOLS[depth].submit(run, c) for c in calls]]
 
 
 class NotFound(Exception):
@@ -102,8 +130,13 @@ class Service:
         return [self._shift(r, "timestamp", demo=bool(site.get("is_demo"))) for r in rows]
 
     def _analyze(self, site: dict, now: datetime) -> tuple[dict, list]:
-        hourly = [(r["t"], float(r["tds"])) for r in self._series(site, now - timedelta(days=30), now + timedelta(minutes=5), 3600)]
-        recent = [(r["timestamp"], float(r["tds_ppm"])) for r in self._recent(site) if r["timestamp"] >= now - timedelta(hours=24)]
+        self.offset()  # warm the cached demo offset before fanning out
+        series, latest = together(
+            lambda: self._series(site, now - timedelta(days=30), now + timedelta(minutes=5), 3600),
+            lambda: self._recent(site),
+        )
+        hourly = [(r["t"], float(r["tds"])) for r in series]
+        recent = [(r["timestamp"], float(r["tds_ppm"])) for r in latest if r["timestamp"] >= now - timedelta(hours=24)]
         return an.analyze(hourly, recent, now), hourly
 
     def _observations(self, site_ids: list[str], limit: int = 50) -> list[dict]:
@@ -113,13 +146,17 @@ class Service:
     def site_detail(self, site_id: str) -> dict:
         site = self._site(site_id)
         now = utcnow()
-        a, _ = self._analyze(site, now)
-        alerts = self.store.list_alerts([site_id], status="active")
+        (a, _), alerts, devices, observation_count = together(
+            lambda: self._analyze(site, now),
+            lambda: self.store.list_alerts([site_id], status="active"),
+            lambda: self.store.list_devices([site_id]),
+            lambda: self.store.count_observations([site_id]),
+        )
         public = self._public_site({**site, **site_cache(a)}, len(alerts))
         public["citizen"] = citizen_copy(a["state"], a["direction"], a["deviation_percent"], a["current_tds"], a["baseline_tds"])
         public["trend"] = a["trend"]
-        public["devices"] = [self._device_public(d) for d in self.store.list_devices([site_id])]
-        public["observation_count"] = self.store.count_observations([site_id])
+        public["devices"] = [self._device_public(d) for d in devices]
+        public["observation_count"] = observation_count
         public["disclaimer"] = DISCLAIMER
         return public
 
@@ -257,8 +294,8 @@ class Service:
     def assessment(self, site_id: str, with_history: bool = True) -> dict:
         site = self._site(site_id)
         now = utcnow()
-        a, _ = self._analyze(site, now)
-        result = assess(site, a, self._observations([site_id], 30), now)
+        (a, _), observations = together(lambda: self._analyze(site, now), lambda: self._observations([site_id], 30))
+        result = assess(site, a, observations, now)
         text = llm.explain(result["evidence"], result["assessment"], result["risk_level"])
         if text:
             result["explanation"], result["source"] = text, "llm"
@@ -273,7 +310,8 @@ class Service:
 
     def assessments(self, mode: str) -> list[dict]:
         order = {"elevated": 0, "potential_stress": 1, "watch": 2, "unknown": 3, "stable": 4}
-        rows = [self.assessment(sid, with_history=False) for sid in self._site_ids(mode)]
+        self.offset()
+        rows = together(*[lambda sid=sid: self.assessment(sid, with_history=False) for sid in self._site_ids(mode)])
         return sorted(rows, key=lambda r: (order.get(r["risk_level"], 9), -r["anomaly_score"]))
 
     # ------------------------------------------------------------------
@@ -319,10 +357,15 @@ class Service:
     # ------------------------------------------------------------------
     def stats(self, mode: str) -> dict:
         sites = self._site_ids(mode)
-        devices = [self._device_public(d) for d in self.store.list_devices(list(sites))]
+        ids = list(sites)
+        devices, observations, alerts = together(
+            lambda: [self._device_public(d) for d in self.store.list_devices(ids)],
+            lambda: self.store.count_observations(ids),
+            lambda: self.store.list_alerts(ids, status="active"),
+        )
         return {
             "mode": mode, "sites": len(sites),
             "active_sensors": sum(d["status"] == "online" for d in devices),
-            "observations": self.store.count_observations(list(sites)),
-            "potential_anomalies": len(self.store.list_alerts(list(sites), status="active")),
+            "observations": observations,
+            "potential_anomalies": len(alerts),
         }

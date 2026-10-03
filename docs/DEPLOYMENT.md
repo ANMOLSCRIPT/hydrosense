@@ -5,6 +5,7 @@ One Vercel project serves both the static frontend and the FastAPI backend.
 - `vercel.json` builds `frontend/` into `frontend/dist` and rewrites `/api/*` and `/docs` to the Python function `api/index.py`, which imports the FastAPI app from `backend/app`.
 - Every other path falls back to `index.html`, so client-side routes such as `/explore/DEMO-04` survive a refresh.
 - Python dependencies come from the root `requirements.txt`.
+- `regions` in `vercel.json` pins the function to `hnd1` (Tokyo), next to this project's Supabase database in `ap-northeast-1`. If your database is elsewhere, change it to the nearest Vercel region.
 
 ```bash
 npm i -g vercel

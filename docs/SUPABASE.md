@@ -18,6 +18,8 @@ Open the Supabase SQL editor, paste `supabase/migrations/0001_hydrosense_schema.
 DATABASE_URL="postgresql://..." python scripts/apply_schema.py
 ```
 
+The script accepts passwords containing characters such as `/` without URL-encoding.
+
 This creates the tables, indexes, the `site_series` function, Row Level Security policies, the `observation-photos` bucket and the live site `SITE-001`. It is safe to run again.
 
 ## 3. Environment variables

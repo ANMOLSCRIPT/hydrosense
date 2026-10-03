@@ -98,3 +98,12 @@ def test_live_hardware_flow_raises_alert_only_when_sustained():
     dev = c.get("/api/devices/HS-001").json()
     assert dev["status"] == "online" and dev["latest"]["tds_ppm"] == 520
     assert c.get("/api/stats?mode=live").json()["active_sensors"] == 1
+
+
+def test_nested_parallel_queries_do_not_deadlock():
+    """Regression: many concurrent all-site assessments once exhausted a single shared pool."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=24) as pool:
+        results = list(pool.map(lambda _: c.get("/api/assessments").status_code, range(24), timeout=60))
+    assert results == [200] * 24

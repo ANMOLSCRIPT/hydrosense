@@ -5,14 +5,37 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/index.py": { "maxDuration": 30, "excludeFiles": "{frontend,firmware,docs,scripts,supabase,.venv}/**" }
+    "api/index.py": {
+      "maxDuration": 30,
+      "excludeFiles": "{frontend,firmware,docs,scripts,supabase,.venv}/**"
+    }
   },
   "rewrites": [
-    { "source": "/docs", "destination": "/api/index" },
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
+    {
+      "source": "/docs",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/((?!api/|assets/).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
-    { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] }
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "regions": [
+    "hnd1"
   ]
 }

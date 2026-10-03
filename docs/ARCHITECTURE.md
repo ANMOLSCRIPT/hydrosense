@@ -43,6 +43,7 @@
 - **Demo data is real rows.** Demo sites are ordinary rows flagged `is_demo`. Their alerts and assessments were produced by replaying synthetic measurements through the same engines used for live data.
 - **Demo time shift.** Seeded demo rows keep fixed timestamps and are shifted at read time so the newest demo reading is always 0 to 30 minutes old. Nothing is rewritten.
 - **Store abstraction.** `SupabaseStore` is used whenever credentials are present. `MemoryStore` implements the same interface for tests and as a fallback, so the API runs with no credentials at all.
+- **Concurrent reads.** Independent queries (different sites, unrelated tables) run on thread pools, one pool per nesting level so nested fan-out cannot deadlock. Writes stay sequential. Dropped keep-alive connections are retried.
 - **Polling, not WebSockets.** Live mode refetches every 6 seconds, which is enough for a 10-second sensor interval and keeps the serverless backend stateless.
 
 ## Data flows

@@ -7,6 +7,7 @@ in memory so the API and tests can run with no credentials at all.
 from __future__ import annotations
 
 import os
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -279,6 +280,35 @@ class SupabaseStore:
     def list_assessments(self, site_id: str, limit: int = 20) -> list[dict]:
         q = self.db.table("assessments").select("*").eq("site_id", site_id)
         return self._rows(q.order("timestamp", desc=True).limit(limit))
+
+
+def _with_retry(method):
+    """Retry on dropped connections.
+
+    Serverless instances are frozen between requests, so a pooled keep-alive
+    connection can be closed by the server while idle. The next request then
+    fails before it is processed ("Server disconnected"); retrying is safe.
+    """
+    import functools
+
+    import httpx
+
+    @functools.wraps(method)
+    def wrapper(*args, **kwargs):
+        for attempt in range(3):
+            try:
+                return method(*args, **kwargs)
+            except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.ReadError, httpx.WriteError, httpx.PoolTimeout):
+                if attempt == 2:
+                    raise
+                time.sleep(0.15 * (attempt + 1))
+
+    return wrapper
+
+
+for _name, _method in list(vars(SupabaseStore).items()):
+    if callable(_method) and not _name.startswith("_"):
+        setattr(SupabaseStore, _name, _with_retry(_method))
 
 
 def supabase_credentials() -> tuple[str | None, str | None]:
