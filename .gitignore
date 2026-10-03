@@ -1,0 +1,24 @@
+# secrets
+.env
+.env.*
+!.env.example
+firmware/hydrosense/config.h
+
+# dependencies and builds
+node_modules/
+dist/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.pio/
+.vercel/
+
+# editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.log
+.vercel
+.env*

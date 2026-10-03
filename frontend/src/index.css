@@ -1,0 +1,89 @@
+@import '@fontsource-variable/manrope';
+@import 'tailwindcss';
+
+/* HydroSense design tokens ------------------------------------------------ */
+@theme {
+  --font-sans: 'Manrope Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-navy-950: #071a33;
+  --color-navy-900: #0b2545;
+  --color-navy-800: #123459;
+  --color-navy-700: #1b466f;
+  --color-ink: #10263d;
+  --color-ink-soft: #46596b;
+  --color-ink-muted: #6b7c8c;
+
+  --color-aqua-50: #eef8fb;
+  --color-aqua-100: #d7eff5;
+  --color-aqua-200: #aedfea;
+  --color-aqua-400: #35b6c9;
+  --color-aqua-500: #1397b0;
+  --color-aqua-600: #0d7c96;
+  --color-aqua-700: #0f6378;
+  --color-teal-500: #12a594;
+  --color-leaf-500: #2f9e6e;
+
+  --color-mist: #f4f8fa;
+  --color-line: #dfe8ee;
+
+  /* Monitoring states: always paired with an icon and a text label */
+  --color-ok: #1c8f5f;
+  --color-ok-soft: #e6f5ee;
+  --color-watch: #b07a00;
+  --color-watch-soft: #fdf3d7;
+  --color-change: #c8561b;
+  --color-change-soft: #fdebdf;
+  --color-danger: #c53030;
+  --color-danger-soft: #fde8e8;
+  --color-idle: #5c6f80;
+  --color-idle-soft: #edf1f4;
+
+  --shadow-card: 0 1px 2px rgb(11 37 69 / 0.05), 0 6px 20px -8px rgb(11 37 69 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(11 37 69 / 0.06), 0 16px 32px -12px rgb(11 37 69 / 0.22);
+
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-pop: pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-pulse-ring: pulse-ring 2.2s ease-out infinite;
+
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.7; } 100% { transform: scale(2.2); opacity: 0; } }
+}
+
+@layer base {
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { @apply bg-mist font-sans text-ink antialiased; }
+  h1, h2, h3, h4 { @apply font-bold tracking-tight text-navy-900; text-wrap: balance; }
+  p { text-wrap: pretty; }
+  :focus-visible { outline: 3px solid var(--color-aqua-400); outline-offset: 2px; border-radius: 6px; }
+  button, a, [role='button'], summary { -webkit-tap-highlight-color: transparent; }
+  button:not(:disabled), summary { cursor: pointer; }
+}
+
+@utility card { @apply rounded-2xl border border-line bg-white shadow-card; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition duration-200 disabled:opacity-50; }
+@utility btn-primary { @apply btn bg-aqua-600 text-white hover:bg-aqua-700 hover:shadow-lift active:scale-[0.98]; }
+@utility btn-dark { @apply btn bg-navy-900 text-white hover:bg-navy-800 active:scale-[0.98]; }
+@utility btn-ghost { @apply btn border border-line bg-white text-navy-900 hover:border-aqua-400 hover:bg-aqua-50 active:scale-[0.98]; }
+@utility btn-light { @apply btn bg-white/10 text-white ring-1 ring-white/30 hover:bg-white/20 active:scale-[0.98]; }
+@utility eyebrow { @apply text-xs font-bold tracking-[0.14em] text-aqua-600 uppercase; }
+@utility skeleton { @apply rounded-lg; background: linear-gradient(90deg, #e9eff3 25%, #f5f8fa 50%, #e9eff3 75%); background-size: 200% 100%; animation: var(--animate-shimmer); }
+@utility container-page { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
+@utility tabular { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Leaflet --------------------------------------------------------------- */
+.leaflet-container { font-family: var(--font-sans); background: #e8f0f4; z-index: 0; }
+.leaflet-control-attribution { font-size: 10px; }
+.hs-marker { background: none; border: none; }
+.hs-pin { position: relative; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9999px; color: #fff; border: 3px solid #fff; box-shadow: 0 4px 12px rgb(11 37 69 / 0.35); transition: transform 0.18s ease; }
+.hs-pin svg { width: 18px; height: 18px; }
+.hs-marker:hover .hs-pin, .hs-pin.is-selected { transform: scale(1.18); }
+.hs-pin.is-selected { box-shadow: 0 0 0 4px rgb(53 182 201 / 0.55), 0 4px 12px rgb(11 37 69 / 0.35); }
+.hs-pin .hs-ring { position: absolute; inset: -3px; border-radius: 9999px; border: 3px solid currentColor; animation: var(--animate-pulse-ring); pointer-events: none; }
+.leaflet-tile-pane { filter: saturate(0.75) brightness(1.03); }

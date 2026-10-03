@@ -1,0 +1,6 @@
+-r ../requirements.txt
+uvicorn[standard]
+httpx
+pytest
+python-dotenv
+psycopg[binary]
