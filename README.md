@@ -108,6 +108,10 @@ React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query, Recharts, Leaflet wi
 | `/alerts` Alerts | `/dashboard/devices`, `/dashboard/devices/test` |
 | `/about` About | `/dashboard/alerts` |
 
+## Android App
+
+A native Kotlin + Jetpack Compose client in [`android/`](android/README.md) that uses the same API, database and storage as the web app. Citizens can explore the map, open a site, read analytics, submit an observation with a photo and see alerts. Reports made on Android appear on the web, and sensor readings appear in both.
+
 ## AI Assessment
 
 A deterministic evidence engine produces `assessment`, `confidence`, `contributing_factors`, `explanation` and `recommendation` from sensor analytics and the last 72 hours of citizen observations. If `ANTHROPIC_API_KEY` is configured, a Claude model rewrites the explanation from the same structured evidence; it cannot change results or introduce measurements. HydroSense works fully without an LLM.
@@ -191,6 +195,7 @@ Temperature, pH, turbidity, dissolved oxygen and conductivity sensing · LoRaWAN
 
 ```text
 frontend/   React application          firmware/   ESP32 firmware
+android/    Native Android app (Kotlin)
 backend/    FastAPI application        docs/       architecture, methodology, hardware, API
 api/        Vercel entry point         scripts/    seed, schema and device simulator
 supabase/   database migrations

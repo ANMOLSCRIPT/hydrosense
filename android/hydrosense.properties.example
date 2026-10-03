@@ -1,0 +1,6 @@
+# Copy to hydrosense.properties (git-ignored) to override the defaults.
+# Only client-safe values belong here. NEVER put the Supabase service-role key,
+# a database password or any server secret in the Android app.
+API_BASE_URL=https://hydrosense-beta.vercel.app/
+SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+SUPABASE_ANON_KEY=your-anon-or-publishable-key

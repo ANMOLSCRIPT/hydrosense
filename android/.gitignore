@@ -1,0 +1,12 @@
+.gradle/
+build/
+local.properties
+hydrosense.properties
+*.iml
+.idea/
+.kotlin/
+captures/
+*.apk
+*.aab
+*.jks
+*.keystore
