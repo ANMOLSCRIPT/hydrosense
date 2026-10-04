@@ -4,7 +4,13 @@
 
 A citizen-friendly smart water monitoring platform that combines a low-cost ESP32 TDS sensor with citizen observations, transparent analytics and explainable assessment. Built for the **OneAquaHealth IEEE Hackathon**.
 
-**Live demo:** https://hydrosense-beta.vercel.app · **API docs:** https://hydrosense-beta.vercel.app/docs
+## Live Demo
+
+**[Launch HydroSense](https://hydrosense-beta.vercel.app)** · [API documentation](https://hydrosense-beta.vercel.app/docs) · [Android APK](https://github.com/ANMOLSCRIPT/hydrosense/releases/latest)
+
+![HydroSense home page](docs/images/web-home.png)
+
+*The public site runs in Demo Mode by default. Screenshots in this README show simulated demo data, labelled as such in the app.*
 
 > **Important:** HydroSense is an environmental monitoring and decision-support prototype. TDS is only one indicator and cannot by itself determine overall water quality, pollution, ecosystem health, or drinking-water safety. HydroSense alerts indicate changes that may warrant further observation or field verification.
 
@@ -110,6 +116,48 @@ FastAPI (Python). `backend/app/`: `main.py` (routes and validation), `service.py
 
 React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query, Recharts, Leaflet with OpenStreetMap. `frontend/src/pages/` holds the citizen pages and `pages/dashboard/` the monitoring views.
 
+### Dashboard
+
+![Monitoring dashboard](docs/images/web-dashboard.png)
+
+**Monitoring dashboard:** network overview with the latest reading, baseline, deviation, open alerts and device status.
+
+### Live Monitoring
+
+![Site analytics](docs/images/web-analytics.png)
+
+**Site analytics:** measurements against the site's own baseline, with points outside the usual range marked.
+
+### Map
+
+![Water map](docs/images/web-map.jpg)
+
+**Water map:** every monitoring site with its current state. States are HydroSense monitoring states, not certified water-safety classes.
+
+### Site Details
+
+![Site page](docs/images/web-site-details.png)
+
+**Site page:** a plain-language headline first, with *Why?* and *What should I do?* one tap away.
+
+### Citizen Reporting
+
+![Reporting flow](docs/images/web-report.png)
+
+**Reporting flow:** pick a site, answer a few questions, optionally add a photo. No account needed.
+
+### Alerts & Assessment
+
+![Alerts](docs/images/web-alerts.png)
+
+**Alerts:** raised only for sustained changes, and worded as worth a closer look, not confirmed pollution.
+
+![Assessment](docs/images/web-insights.png)
+
+**Assessment:** rule-based evidence from sensor analytics and citizen observations, with a confidence level and a recommended next step.
+
+### Routes
+
 | Citizen | Monitoring |
 |---|---|
 | `/` Home | `/dashboard` Overview |
@@ -122,6 +170,14 @@ React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query, Recharts, Leaflet wi
 ## Android Application
 
 A native Kotlin + Jetpack Compose client in [`android/`](android/README.md) that uses the same API, database and storage as the web app. Citizens can explore the map, open a site, read analytics, submit an observation with a photo and see alerts. Reports made on Android appear on the web, and sensor readings appear in both.
+
+Download the APK from the [latest release](https://github.com/ANMOLSCRIPT/hydrosense/releases/latest).
+
+| Mobile Dashboard | Map | Site |
+|:---:|:---:|:---:|
+| <img src="docs/images/android-home.png" width="250" alt="Android home screen"> | <img src="docs/images/android-map.png" width="250" alt="Android map screen"> | <img src="docs/images/android-site.png" width="250" alt="Android site screen"> |
+| **Monitoring** | **Reporting** | **Alerts** |
+| <img src="docs/images/android-analytics.png" width="250" alt="Android analytics screen"> | <img src="docs/images/android-report.png" width="250" alt="Android reporting screen"> | <img src="docs/images/android-alerts.png" width="250" alt="Android alerts screen"> |
 
 ## AI Assessment
 
@@ -139,7 +195,7 @@ Six simulated sites with 30 days of hourly data: two stable, one gradually risin
 
 Switch the toggle to **Live Mode**. Readings posted by the ESP32 to `SITE-001` appear within seconds; the dashboard polls every 6 seconds. A new sensor shows "Still learning" until it has about 20 readings.
 
-## Local Development
+## Installation
 
 ```bash
 # Backend (runs with built-in demo data if no Supabase credentials are set)
@@ -177,7 +233,19 @@ Copy `.env.example` to `.env` and fill in your own values. Only variable names a
 | `INGEST_API_KEY` | server, optional | require `X-Device-Key` from devices |
 | `ANTHROPIC_API_KEY`, `LLM_MODEL` | server, optional | LLM-written explanations |
 
-Never commit `.env`, `firmware/hydrosense/config.h`, or any key.
+**Where each part reads its configuration**
+
+| Part | File (not committed) | Template | Names |
+|---|---|---|---|
+| Web app | `.env` | `.env.example` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` |
+| Backend | `.env` | `.env.example` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, optional `INGEST_API_KEY`, `ANTHROPIC_API_KEY`, `LLM_MODEL`, `CORS_ORIGINS` |
+| Android app | `android/hydrosense.properties` | `android/hydrosense.properties.example` | `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` (client-safe values only) |
+| ESP32 firmware | `firmware/hydrosense/config.h` | `firmware/hydrosense/config.example.h` | `WIFI_SSID`, `WIFI_PASSWORD`, `API_URL`, `DEVICE_KEY`, `DEVICE_ID`, `SITE_ID` |
+| Deployment | Vercel project environment variables | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | the web app and backend names above |
+
+The Supabase anon (publishable) key is designed to be shipped in the browser and the Android app; Row Level Security limits it to public reads and photo uploads. The service-role key is server-only and must never be placed in the frontend, the Android app or the firmware.
+
+Never commit `.env`, `android/hydrosense.properties`, `firmware/hydrosense/config.h`, or any key.
 
 ## API Documentation
 
