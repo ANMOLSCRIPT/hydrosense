@@ -46,6 +46,17 @@ ESP32 + TDS probe ──HTTPS──▶ FastAPI on Vercel ──▶ Supabase (Pos
 
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Web app | React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query, Recharts, Leaflet with OpenStreetMap |
+| Android app | Kotlin, Jetpack Compose, Material 3, Retrofit, kotlinx.serialization, Coil, osmdroid |
+| Backend | Python, FastAPI |
+| Data | Supabase (PostgreSQL, Storage, Row Level Security) |
+| Firmware | ESP32, Arduino C++, PlatformIO |
+| Hosting | Vercel (static frontend and Python API in one project) |
+
 ## Data Flow
 
 ```text
@@ -63,11 +74,11 @@ A citizen should be able to use HydroSense without knowing anything about TDS, I
 - **Honest.** Potential anomaly, never confirmed pollution. Demo data is labelled everywhere.
 - **Mobile first for reporting, desktop first for monitoring.**
 
-## Hardware
+## ESP32 / IoT Hardware
 
 ESP32 development board and an analog TDS sensor module. Roughly USD 15 in parts.
 
-## Wiring
+### Wiring
 
 ```text
 TDS sensor board        ESP32
@@ -78,7 +89,7 @@ A    (analog out)  →    GPIO 34
 
 Power the sensor from 3V3 so its output can never exceed what the ESP32 tolerates. If your module needs 5 V or its specification is unknown, read [docs/HARDWARE.md](docs/HARDWARE.md) first.
 
-## Firmware
+### Firmware
 
 ```bash
 cd firmware/hydrosense && cp config.example.h config.h   # then edit Wi-Fi, API_URL, IDs
@@ -87,7 +98,7 @@ cd .. && pio run -t upload && pio device monitor
 
 Arduino IDE instructions, expected serial output and failure behaviour: [docs/HARDWARE.md](docs/HARDWARE.md). Calibration: [docs/CALIBRATION.md](docs/CALIBRATION.md).
 
-## Supabase Database
+## Supabase
 
 Tables: `sites`, `devices`, `measurements`, `observations`, `alerts`, `assessments`. Photos go to the `observation-photos` Storage bucket. Row Level Security allows public read only; all writes go through the API with the server-side service-role key. Schema: [supabase/migrations/0001_hydrosense_schema.sql](supabase/migrations/0001_hydrosense_schema.sql). Setup: [docs/SUPABASE.md](docs/SUPABASE.md).
 
@@ -95,7 +106,7 @@ Tables: `sites`, `devices`, `measurements`, `observations`, `alerts`, `assessmen
 
 FastAPI (Python). `backend/app/`: `main.py` (routes and validation), `service.py` (application logic), `analytics.py`, `assessment.py`, `llm.py`, `store.py`, `demo.py`.
 
-## Frontend
+## Web Application
 
 React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query, Recharts, Leaflet with OpenStreetMap. `frontend/src/pages/` holds the citizen pages and `pages/dashboard/` the monitoring views.
 
@@ -108,7 +119,7 @@ React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query, Recharts, Leaflet wi
 | `/alerts` Alerts | `/dashboard/devices`, `/dashboard/devices/test` |
 | `/about` About | `/dashboard/alerts` |
 
-## Android App
+## Android Application
 
 A native Kotlin + Jetpack Compose client in [`android/`](android/README.md) that uses the same API, database and storage as the web app. Citizens can explore the map, open a site, read analytics, submit an observation with a photo and see alerts. Reports made on Android appear on the web, and sensor readings appear in both.
 
@@ -148,13 +159,11 @@ cd frontend && npm install && npm run dev                        # http://localh
 
 ## Deployment
 
-One Vercel project serves the static frontend and the FastAPI backend. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+One Vercel project serves the static frontend and the FastAPI backend. The deployed application is at https://hydrosense-beta.vercel.app. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-## Vercel URL
+## Environment Variables
 
-https://hydrosense-beta.vercel.app
-
-## Supabase Configuration
+Copy `.env.example` to `.env` and fill in your own values. Only variable names are documented here.
 
 | Variable | Scope | Purpose |
 |---|---|---|
@@ -163,6 +172,8 @@ https://hydrosense-beta.vercel.app
 | `VITE_API_URL` | browser | empty when the API is on the same origin |
 | `SUPABASE_URL` | server | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | server only | API writes |
+| `DATABASE_URL` | scripts only, optional | direct Postgres URL for `scripts/apply_schema.py` |
+| `CORS_ORIGINS` | server, optional | comma-separated allowed origins |
 | `INGEST_API_KEY` | server, optional | require `X-Device-Key` from devices |
 | `ANTHROPIC_API_KEY`, `LLM_MODEL` | server, optional | LLM-written explanations |
 
@@ -172,7 +183,11 @@ Never commit `.env`, `firmware/hydrosense/config.h`, or any key.
 
 Swagger UI at `/docs`. Summary: [docs/API.md](docs/API.md).
 
-## Scientific Limitations
+## Responsible Water-Quality Interpretation
+
+HydroSense reports how a site's recent TDS readings compare with that site's own history, alongside what citizens observed. An alert means a sustained change that may deserve a closer look. It is worded as a potential anomaly, never as confirmed pollution, and it is not a statement about whether water is safe.
+
+## Limitations
 
 - TDS is one indicator. It does not detect pathogens, heavy metals, nutrients, pesticides or dissolved oxygen.
 - Low-cost probes are not laboratory instruments; readings depend on calibration and temperature, which is assumed rather than measured.
@@ -189,9 +204,9 @@ Swagger UI at `/docs`. Summary: [docs/API.md](docs/API.md).
 
 ## Future Work
 
-Temperature, pH, turbidity, dissolved oxygen and conductivity sensing · LoRaWAN · solar-powered nodes · additional environmental sensors · computer vision on citizen photos · mobile application · FHIR interoperability · larger-scale deployment · authentication for the monitoring dashboard · validation of thresholds against laboratory data.
+Temperature, pH, turbidity, dissolved oxygen and conductivity sensing · LoRaWAN · solar-powered nodes · additional environmental sensors · computer vision on citizen photos · FHIR interoperability · larger-scale deployment · authentication for the monitoring dashboard · validation of thresholds against laboratory data.
 
-## Repository
+## Project Structure
 
 ```text
 frontend/   React application          firmware/   ESP32 firmware

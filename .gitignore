@@ -20,6 +20,13 @@ __pycache__/
 .vscode/
 .idea/
 *.log
-.vercel
-.env*
-!.env.example
+
+# android / gradle
+build/
+.gradle/
+.kotlin/
+local.properties
+*.apk
+*.aab
+*.jks
+*.keystore
